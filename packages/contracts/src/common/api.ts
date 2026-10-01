@@ -1,0 +1,1 @@
+export type ApiSuccessResponse<T extends object> = T;
