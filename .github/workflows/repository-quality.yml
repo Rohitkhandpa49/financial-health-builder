@@ -41,6 +41,7 @@ jobs:
             ".github/ISSUE_TEMPLATE/bug_report.md"
             ".github/ISSUE_TEMPLATE/feature_request.md"
             ".github/ISSUE_TEMPLATE/task.md"
+            "docs/architecture/ARCHITECTURE.md"
           )
 
           for file in "${required_files[@]}"; do
