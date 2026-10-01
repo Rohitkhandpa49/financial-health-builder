@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountType {
+  BANK
+  CASH
+  SAVINGS
+  CREDIT
+  OTHER
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransferDirection {
+  OUTGOING
+  INCOMING
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum SavingsGoalStatus {
+  ACTIVE
+  COMPLETED
+  OVERDUE
+  ARCHIVED
+}
+
+model User {
+  id            String        @id @default(uuid()) @db.Uuid
+  name          String        @db.VarChar(120)
+  email         String        @unique @db.VarChar(254)
+  passwordHash  String        @db.VarChar(255)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+  budgets       Budget[]
+  savingsGoals  SavingsGoal[]
+}
+
+model Account {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @db.Uuid
+  name           String        @db.VarChar(120)
+  type           AccountType
+  currency       String        @db.Char(3)
+  openingBalance Decimal       @db.Decimal(19, 4)
+  archived       Boolean       @default(false)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transactions   Transaction[]
+
+  @@unique([id, userId, currency])
+  @@index([userId, archived])
+}
+
+model Category {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String?       @db.Uuid
+  name          String        @db.VarChar(100)
+  type          CategoryType
+  systemDefined Boolean
+  archived      Boolean       @default(false)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  user          User?         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transactions  Transaction[]
+  budgets       Budget[]
+
+  @@index([userId, type, archived])
+}
+
+model Transaction {
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @db.Uuid
+  accountId         String             @db.Uuid
+  categoryId        String?            @db.Uuid
+  type              TransactionType
+  amount            Decimal            @db.Decimal(19, 4)
+  currency          String             @db.Char(3)
+  description       String             @db.VarChar(500)
+  effectiveAt       DateTime           @db.Timestamptz(3)
+  transferGroupId   String?            @db.Uuid
+  transferDirection TransferDirection?
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @db.Timestamptz(3)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  account           Account            @relation(fields: [accountId, userId, currency], references: [id, userId, currency], onDelete: Restrict, onUpdate: Cascade)
+  category          Category?          @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([transferGroupId, transferDirection])
+  @@index([userId, effectiveAt])
+  @@index([accountId, userId, effectiveAt])
+  @@index([categoryId, effectiveAt])
+}
+
+model Budget {
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @db.Uuid
+  categoryId String?      @db.Uuid
+  name       String       @db.VarChar(120)
+  amount     Decimal      @db.Decimal(19, 4)
+  currency   String       @db.Char(3)
+  period     BudgetPeriod
+  startDate  DateTime     @db.Date
+  endDate    DateTime     @db.Date
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category   Category?    @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([userId, startDate, endDate])
+}
+
+model SavingsGoal {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String            @db.Uuid
+  name          String            @db.VarChar(120)
+  targetAmount  Decimal           @db.Decimal(19, 4)
+  currentAmount Decimal           @default(0) @db.Decimal(19, 4)
+  currency      String            @db.Char(3)
+  targetDate    DateTime          @db.Date
+  status        SavingsGoalStatus @default(ACTIVE)
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @db.Timestamptz(3)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([userId, status])
+}
