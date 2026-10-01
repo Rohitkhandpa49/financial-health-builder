@@ -1,0 +1,26 @@
+{
+  "name": "@financial-health-builder/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "dotenv": "18.0.5",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.5.2",
+    "@types/pg": "8.23.1",
+    "fast-check": "^3.23.1",
+    "prisma": "7.10.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
