@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { createAccountRouter, type AccountRouterOptions } from "./accounts/account.routes.js";
 import { createAuthRouter, type AuthRouterOptions } from "./auth/auth.routes.js";
 import { createCategoryRouter, type CategoryRouterOptions } from "./categories/category.routes.js";
+import { createTransactionRouter, type TransactionRouterOptions } from "./transactions/transaction.routes.js";
 import { errorHandler, notFoundHandler } from "./http/errors.js";
 import { requestIdMiddleware } from "./http/request-id.js";
 import { v1Router } from "./routes/v1.js";
@@ -13,6 +14,7 @@ export interface AppOptions {
   auth?: AuthRouterOptions;
   accounts?: AccountRouterOptions;
   categories?: CategoryRouterOptions;
+  transactions?: TransactionRouterOptions;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -39,6 +41,9 @@ export function createApp(options: AppOptions = {}) {
   }
   if (options.categories) {
     app.use("/api/v1/categories", createCategoryRouter(options.categories));
+  }
+  if (options.transactions) {
+    app.use("/api/v1/transactions", createTransactionRouter(options.transactions));
   }
   app.use(notFoundHandler);
   app.use(errorHandler);

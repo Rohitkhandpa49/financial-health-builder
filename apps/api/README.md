@@ -70,6 +70,22 @@ Categories are either user-owned or system-defined. User-owned categories are cr
 
 `name` is trimmed, required, and limited to 100 characters. `type` must be `INCOME` or `EXPENSE`. System categories are visible to all authenticated users but can never be created, updated, or archived through the API.
 
+## Transactions
+
+All transaction routes require the authenticated `fhb_access` cookie. Ownership comes only from the verified `request.auth.userId`; request bodies and query parameters cannot select an owner.
+
+- `POST /api/v1/transactions` accepts `accountId`, `type`, `amount`, `description`, and `effectiveAt` (with optional `categoryId`); returns `201` with `{ transaction }`. The currency is derived from the referenced account — it cannot be supplied by the client.
+- `GET /api/v1/transactions` returns the authenticated user's transactions, ordered by `effectiveAt` descending, then `createdAt` descending, then `id` descending. Accepts `page` (default `1`), `pageSize` (default `25`), `accountId` (filter by account UUID), and `type` (`INCOME` or `EXPENSE`). The response includes `transactions` and `pagination` metadata. Unknown query parameters (including `userId`) are rejected with `400 VALIDATION_ERROR`.
+- `GET /api/v1/transactions/:transactionId` returns an owned transaction. Foreign and nonexistent IDs return `404 TRANSACTION_NOT_FOUND`.
+- `PATCH /api/v1/transactions/:transactionId` permits updating `categoryId`, `type`, `amount`, `description`, and `effectiveAt`. All fields are optional. Unknown fields are rejected. Foreign and nonexistent IDs return `404 TRANSACTION_NOT_FOUND`.
+- `DELETE /api/v1/transactions/:transactionId` permanently deletes the transaction and returns `204`. Foreign and nonexistent IDs return `404 TRANSACTION_NOT_FOUND`.
+
+**Ownership model:** All queries scope by the authenticated `userId`. A foreign or nonexistent transaction always returns `404 TRANSACTION_NOT_FOUND`, never a `403`. The `userId`, `transferGroupId`, and `transferDirection` fields are never included in any response.
+
+**TRANSFER exclusion:** The `TRANSFER` transaction type is reserved for internal double-entry bookkeeping. It is excluded from all V1 endpoints — validation rejects `type: "TRANSFER"` in request bodies, and all repository queries filter out TRANSFER records with `NOT: { type: "TRANSFER" }`. TRANSFER transactions can exist in the database (seeded or migrated) but are never visible or createable through V1 endpoints.
+
+**Amount rules:** `amount` must be a positive decimal string with no leading minus sign. Use at most 15 integer digits and up to 4 fractional digits. Zero (`"0"`, `"0.0"`, `"0.00"`, `"0.0000"`) is accepted. The direction of money flow is expressed via the `type` field (`INCOME` or `EXPENSE`), not via a negative sign. Amounts are stored as `DECIMAL(19,4)` and returned as a fixed-scale 4-decimal string (e.g., `"50.0000"`).
+
 ## Authorization and ownership
 
 Authentication establishes the immutable `request.auth.userId`; authorization checks whether that identity may access a resource. `assertResourceOwnedByAuthenticatedUser` is the shared ownership policy for user-owned records and returns the existing generic `404 NOT_FOUND` behavior for a foreign owner. Use the verified auth context, never a body, path, query, or header user ID. Ownership checks do not replace scoped persistence queries: repositories include both resource ID and authenticated `userId` in account `where` clauses and must check each related resource independently before writes. Accounts are the only financial-resource routes implemented so far. System-defined category access/mutation policy remains deliberately undecided until category operations are designed.
