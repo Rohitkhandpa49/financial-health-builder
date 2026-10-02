@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import { createAccountRouter, type AccountRouterOptions } from "./accounts/account.routes.js";
 import { createAuthRouter, type AuthRouterOptions } from "./auth/auth.routes.js";
+import { createCategoryRouter, type CategoryRouterOptions } from "./categories/category.routes.js";
 import { errorHandler, notFoundHandler } from "./http/errors.js";
 import { requestIdMiddleware } from "./http/request-id.js";
 import { v1Router } from "./routes/v1.js";
@@ -11,6 +12,7 @@ export interface AppOptions {
   frontendUrl?: string;
   auth?: AuthRouterOptions;
   accounts?: AccountRouterOptions;
+  categories?: CategoryRouterOptions;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -34,6 +36,9 @@ export function createApp(options: AppOptions = {}) {
   }
   if (options.accounts) {
     app.use("/api/v1/accounts", createAccountRouter(options.accounts));
+  }
+  if (options.categories) {
+    app.use("/api/v1/categories", createCategoryRouter(options.categories));
   }
   app.use(notFoundHandler);
   app.use(errorHandler);

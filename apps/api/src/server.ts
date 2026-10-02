@@ -1,6 +1,8 @@
 import { createApp } from "./app.js";
 import { createPrismaAccountRepository } from "./accounts/account.repository.js";
 import { AccountService } from "./accounts/account.service.js";
+import { createPrismaCategoryRepository } from "./categories/category.repository.js";
+import { CategoryService } from "./categories/category.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -16,6 +18,7 @@ const authService = new AuthenticationService(
 );
 const accessTokenService = new JoseAccessTokenService(config.jwtSecret);
 const accountService = new AccountService(createPrismaAccountRepository(prisma));
+const categoryService = new CategoryService(createPrismaCategoryRepository(prisma));
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -27,6 +30,10 @@ const app = createApp({
   },
   accounts: {
     service: accountService,
+    accessTokenService,
+  },
+  categories: {
+    service: categoryService,
     accessTokenService,
   },
 });

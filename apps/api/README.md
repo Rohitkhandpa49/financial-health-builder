@@ -56,6 +56,20 @@ All account routes require the authenticated `fhb_access` cookie. Ownership come
 
 Names are trimmed, required, and limited to 120 characters. Account type must be a schema enum value. Currency must be an uppercase three-letter code recognized by the Node runtime's ISO-style currency list. `openingBalance` must be a decimal string with at most 15 integer digits and four fractional digits; it is stored as `DECIMAL(19,4)` and returned as a fixed-scale string. Positive, zero, and negative values are accepted because the database defines no sign constraint and V1 has not assigned type-specific sign semantics. No floating-point conversion or currency conversion occurs. Currency, account type, and opening balance are intentionally immutable through the current update endpoint; name-only updates avoid silently changing future financial history semantics.
 
+## Categories
+
+All category routes require the authenticated `fhb_access` cookie. Ownership comes only from the verified `request.auth.userId`; request bodies and query parameters cannot select an owner.
+
+Categories are either user-owned or system-defined. User-owned categories are created by authenticated users and belong to that user alone. System categories (`systemDefined: true`, `userId: null`) are created by the platform, visible to all authenticated users, and are read-only — they cannot be modified or archived by any user.
+
+- `POST /api/v1/categories` accepts `name` and `type`; it returns `201` with `{ category }` and derives ownership from authentication. The `type` field is immutable after creation.
+- `GET /api/v1/categories` returns the authenticated user's own categories plus all system categories, ordered by creation time and ID descending. Accepts `page` (default `1`), `pageSize` (default `25`, maximum `100`), `archived` (`false` by default), and `type` (`INCOME` or `EXPENSE`, optional). The response includes `categories` and the shared `pagination` metadata. Unknown query parameters (including `userId`) are rejected with `400 VALIDATION_ERROR`.
+- `GET /api/v1/categories/:categoryId` returns an owned or system category, including when archived. Foreign and nonexistent IDs both return the same `404 NOT_FOUND` response. The `userId` field is never included in any response.
+- `PATCH /api/v1/categories/:categoryId` permits changing only `name`; `type` is immutable and rejected by validation. Archived categories are read-only (`404`). Attempting to update a system category returns `403 FORBIDDEN`.
+- `PATCH /api/v1/categories/:categoryId/archive` sets `archived` without deleting the category. Repeating the operation is safe (idempotent). Archived categories are excluded from the default list and available with `?archived=true`. Attempting to archive a system category returns `403 FORBIDDEN`. Physical deletion is blocked at the database level by a foreign-key constraint (`Transaction.categoryId → Category.id onDelete: Restrict`).
+
+`name` is trimmed, required, and limited to 100 characters. `type` must be `INCOME` or `EXPENSE`. System categories are visible to all authenticated users but can never be created, updated, or archived through the API.
+
 ## Authorization and ownership
 
 Authentication establishes the immutable `request.auth.userId`; authorization checks whether that identity may access a resource. `assertResourceOwnedByAuthenticatedUser` is the shared ownership policy for user-owned records and returns the existing generic `404 NOT_FOUND` behavior for a foreign owner. Use the verified auth context, never a body, path, query, or header user ID. Ownership checks do not replace scoped persistence queries: repositories include both resource ID and authenticated `userId` in account `where` clauses and must check each related resource independently before writes. Accounts are the only financial-resource routes implemented so far. System-defined category access/mutation policy remains deliberately undecided until category operations are designed.
