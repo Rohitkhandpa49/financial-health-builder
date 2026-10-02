@@ -5,7 +5,7 @@ import type { AccessTokenService } from "./access-token.js";
 import { ExpiredAccessTokenError, InvalidAccessTokenError } from "./auth.errors.js";
 
 export const ACCESS_COOKIE_NAME = "fhb_access";
-export const ACCESS_COOKIE_PATH = "/api/v1/auth";
+export const ACCESS_COOKIE_PATH = "/api/v1";
 
 export interface AuthenticatedRequestContext {
   readonly userId: string;

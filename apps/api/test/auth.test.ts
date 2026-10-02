@@ -314,7 +314,7 @@ test("login sets an HttpOnly cookie and /me derives identity only from its verif
     assert.equal("password" in loginBody.user, false);
     assert.match(setCookie, /HttpOnly/i);
     assert.match(setCookie, /SameSite=Strict/i);
-    assert.match(setCookie, /Path=\/api\/v1\/auth/i);
+    assert.match(setCookie, /Path=\/api\/v1/i);
     assert.equal(JSON.stringify(loginBody).includes(cookiePair.split("=")[1]), false);
 
     const currentUser = await fetch(`${baseUrl}/api/v1/auth/me?userId=${randomUUID()}`, {

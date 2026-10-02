@@ -1,4 +1,6 @@
 import { createApp } from "./app.js";
+import { createPrismaAccountRepository } from "./accounts/account.repository.js";
+import { AccountService } from "./accounts/account.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -13,6 +15,7 @@ const authService = new AuthenticationService(
   new Argon2PasswordHasher(),
 );
 const accessTokenService = new JoseAccessTokenService(config.jwtSecret);
+const accountService = new AccountService(createPrismaAccountRepository(prisma));
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -21,6 +24,10 @@ const app = createApp({
     accessTokenService,
     frontendUrl: config.frontendUrl,
     secureCookies: config.nodeEnv === "production",
+  },
+  accounts: {
+    service: accountService,
+    accessTokenService,
   },
 });
 const server = app.listen(config.port, () => {
