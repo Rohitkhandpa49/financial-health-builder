@@ -5,6 +5,8 @@ import { createPrismaCategoryRepository } from "./categories/category.repository
 import { CategoryService } from "./categories/category.service.js";
 import { createPrismaTransactionRepository } from "./transactions/transaction.repository.js";
 import { TransactionService } from "./transactions/transaction.service.js";
+import { createPrismaBudgetRepository } from "./budgets/budget.repository.js";
+import { BudgetService } from "./budgets/budget.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -23,6 +25,8 @@ const accountService = new AccountService(createPrismaAccountRepository(prisma))
 const categoryService = new CategoryService(createPrismaCategoryRepository(prisma));
 const transactionRepository = createPrismaTransactionRepository(prisma);
 const transactionService = new TransactionService(transactionRepository, createPrismaAccountRepository(prisma), createPrismaCategoryRepository(prisma));
+const budgetRepository = createPrismaBudgetRepository(prisma);
+const budgetService = new BudgetService(budgetRepository, createPrismaCategoryRepository(prisma));
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -42,6 +46,10 @@ const app = createApp({
   },
   transactions: {
     service: transactionService,
+    accessTokenService,
+  },
+  budgets: {
+    service: budgetService,
     accessTokenService,
   },
 });

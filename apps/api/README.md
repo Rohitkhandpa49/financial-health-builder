@@ -86,6 +86,26 @@ All transaction routes require the authenticated `fhb_access` cookie. Ownership 
 
 **Amount rules:** `amount` must be a positive decimal string with no leading minus sign. Use at most 15 integer digits and up to 4 fractional digits. Zero (`"0"`, `"0.0"`, `"0.00"`, `"0.0000"`) is accepted. The direction of money flow is expressed via the `type` field (`INCOME` or `EXPENSE`), not via a negative sign. Amounts are stored as `DECIMAL(19,4)` and returned as a fixed-scale 4-decimal string (e.g., `"50.0000"`).
 
+## Budgets
+
+All budget routes require the authenticated `fhb_access` cookie. Ownership comes only from the verified `request.auth.userId`; request bodies and query parameters cannot select an owner.
+
+Budgets represent planned spending limits over a date range. Each budget has a `period` (`WEEKLY`, `MONTHLY`, or `CUSTOM`), an `amount` and `currency` (supplied by the client — not derived from an account), and optional `categoryId` linking to a user-owned or system category.
+
+- `POST /api/v1/budgets` accepts `name`, `amount`, `currency`, `period`, `startDate`, `endDate`, and optionally `categoryId`; returns `201` with `{ budget }`. Ownership is derived from authentication.
+- `GET /api/v1/budgets` returns the authenticated user's budgets, ordered by `startDate` descending, then `createdAt` descending, then `id` descending. Accepts `page` (default `1`), `pageSize` (default `25`, maximum `100`), `categoryId` (filter by category UUID), and `period` (`WEEKLY`, `MONTHLY`, or `CUSTOM`). The response includes `budgets` and `pagination` metadata. Unknown query parameters (including `userId`) are rejected with `400 VALIDATION_ERROR`.
+- `GET /api/v1/budgets/:budgetId` returns an owned budget. Foreign and nonexistent IDs return `404 NOT_FOUND`.
+- `PATCH /api/v1/budgets/:budgetId` permits updating `name`, `categoryId`, `amount`, and `endDate`. All fields are optional. Pass `categoryId: null` to remove a category link. Unknown fields are rejected. Foreign and nonexistent IDs return `404 NOT_FOUND`.
+- `DELETE /api/v1/budgets/:budgetId` permanently deletes the budget and returns `204`. Foreign and nonexistent IDs return `404 NOT_FOUND`.
+
+**Ownership model:** All queries scope by the authenticated `userId`. A foreign or nonexistent budget always returns `404 NOT_FOUND`, never a `403`. The `userId` field is never included in any response.
+
+**Amount rules:** `amount` must be a positive (non-negative) decimal string with no leading minus sign and no leading zeros on the integer part (except `"0"` itself). Use at most 15 integer digits and up to 4 fractional digits. Zero (`"0"`) is accepted. Amounts are stored as `DECIMAL(19,4)` and returned as a fixed-scale 4-decimal string (e.g., `"500.0000"`).
+
+**Date rules:** `startDate` and `endDate` must be in `YYYY-MM-DD` format. `endDate` must be on or after `startDate`. Dates are stored as calendar dates without time components and returned in `YYYY-MM-DD` format. `startDate` is immutable after creation; use `endDate` in PATCH to extend or shorten a budget window.
+
+**Category rules:** If `categoryId` is provided, it must resolve to a user-owned category or a system-defined category. An unrecognized or foreign category returns `400 BUDGET_INVALID_CATEGORY`. Physical deletion is safe — no other model has a foreign key pointing at `Budget`.
+
 ## Authorization and ownership
 
 Authentication establishes the immutable `request.auth.userId`; authorization checks whether that identity may access a resource. `assertResourceOwnedByAuthenticatedUser` is the shared ownership policy for user-owned records and returns the existing generic `404 NOT_FOUND` behavior for a foreign owner. Use the verified auth context, never a body, path, query, or header user ID. Ownership checks do not replace scoped persistence queries: repositories include both resource ID and authenticated `userId` in account `where` clauses and must check each related resource independently before writes. Accounts are the only financial-resource routes implemented so far. System-defined category access/mutation policy remains deliberately undecided until category operations are designed.
