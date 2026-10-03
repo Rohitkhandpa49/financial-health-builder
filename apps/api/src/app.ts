@@ -12,8 +12,10 @@ import { createTransferRouter, type TransferRouterOptions } from "./transfers/tr
 import { createAnalyticsRouter, type AnalyticsRouterOptions } from "./analytics/analytics.routes.js";
 import { createFinancialHealthRouter, type FinancialHealthRouterOptions } from "./financial-health/financial-health.routes.js";
 import { createReportRouter, type ReportRouterOptions } from "./reports/report.routes.js";
+import { createNotificationRouter, type NotificationRouterOptions } from "./notifications/notification.routes.js";
 import { errorHandler, notFoundHandler } from "./http/errors.js";
 import { requestIdMiddleware } from "./http/request-id.js";
+import { auditMiddleware } from "./http/audit.middleware.js";
 import { v1Router } from "./routes/v1.js";
 
 export interface AppOptions {
@@ -29,6 +31,7 @@ export interface AppOptions {
   analytics?: AnalyticsRouterOptions;
   financialHealth?: FinancialHealthRouterOptions;
   reports?: ReportRouterOptions;
+  notifications?: NotificationRouterOptions;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -46,6 +49,7 @@ export function createApp(options: AppOptions = {}) {
     credentials: true,
   }));
   app.use(express.json({ limit: "100kb", strict: true }));
+  app.use(auditMiddleware);
   app.use("/api/v1", v1Router);
   if (options.auth) {
     app.use("/api/v1/auth", createAuthRouter(options.auth));
@@ -79,6 +83,9 @@ export function createApp(options: AppOptions = {}) {
   }
   if (options.reports) {
     app.use("/api/v1/reports", createReportRouter(options.reports));
+  }
+  if (options.notifications) {
+    app.use("/api/v1/notifications", createNotificationRouter(options.notifications));
   }
   app.use(notFoundHandler);
   app.use(errorHandler);

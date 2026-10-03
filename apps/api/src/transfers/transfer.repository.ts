@@ -142,8 +142,8 @@ export function createPrismaTransferRepository(prisma: PrismaClient): TransferRe
       const transfers: TransferPair[] = [];
       for (const groupId of pageGroupIds) {
         const sides = groups.get(groupId)!;
-        const outgoing = sides.find((s) => s.transferDirection === "OUTGOING");
-        const incoming = sides.find((s) => s.transferDirection === "INCOMING");
+        const outgoing = sides.find((s: { transferDirection: string | null }) => s.transferDirection === "OUTGOING");
+        const incoming = sides.find((s: { transferDirection: string | null }) => s.transferDirection === "INCOMING");
         if (outgoing && incoming) {
           transfers.push({
             outgoing: { ...outgoing, amount: outgoing.amount.toFixed(4), currency: outgoing.currency.trim(), transferGroupId: groupId },
@@ -161,8 +161,8 @@ export function createPrismaTransferRepository(prisma: PrismaClient): TransferRe
         select: transferSelect,
       });
 
-      const outgoing = sides.find((s) => s.transferDirection === "OUTGOING");
-      const incoming = sides.find((s) => s.transferDirection === "INCOMING");
+      const outgoing = sides.find((s: { transferDirection: string | null }) => s.transferDirection === "OUTGOING");
+      const incoming = sides.find((s: { transferDirection: string | null }) => s.transferDirection === "INCOMING");
       if (!outgoing || !incoming) return null;
 
       return {

@@ -11,8 +11,24 @@ export interface AccountActivityRow {
   transactionCount: number;
 }
 
+export interface TransactionExportRow {
+  id: string;
+  type: string;
+  amount: { toString(): string };
+  currency: string;
+  description: string | null;
+  effectiveAt: Date;
+  categoryId: string | null;
+  accountId: string;
+  createdAt: Date;
+}
+
 export interface ReportRepository {
   getAccountActivity(userId: string, filter: DateRangeFilter): Promise<AccountActivityRow[]>;
+  getTransactionsForExport?(
+    userId: string,
+    filter: { startDate?: Date; endDate?: Date },
+  ): Promise<TransactionExportRow[]>;
 }
 
 function decimalToString(value: unknown): string {
@@ -95,6 +111,35 @@ export function createPrismaReportRepository(prisma: PrismaClient): ReportReposi
       }
 
       return result;
+    },
+
+    async getTransactionsForExport(userId, filter) {
+      const where: Record<string, unknown> = {
+        userId,
+        type: { not: 'TRANSFER' },
+      };
+      if (filter.startDate || filter.endDate) {
+        const effectiveAt: Record<string, Date> = {};
+        if (filter.startDate) effectiveAt.gte = filter.startDate;
+        if (filter.endDate) effectiveAt.lte = filter.endDate;
+        where.effectiveAt = effectiveAt;
+      }
+
+      return prisma.transaction.findMany({
+        where,
+        orderBy: { effectiveAt: 'desc' },
+        select: {
+          id: true,
+          type: true,
+          amount: true,
+          currency: true,
+          description: true,
+          effectiveAt: true,
+          categoryId: true,
+          accountId: true,
+          createdAt: true,
+        },
+      });
     },
   };
 }

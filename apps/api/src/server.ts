@@ -18,6 +18,8 @@ import { AnalyticsService } from "./analytics/analytics.service.js";
 import { FinancialHealthService } from "./financial-health/financial-health.service.js";
 import { createPrismaReportRepository } from "./reports/report.repository.js";
 import { ReportService } from "./reports/report.service.js";
+import { createPrismaNotificationRepository } from "./notifications/notification.repository.js";
+import { NotificationService } from "./notifications/notification.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -54,6 +56,8 @@ const analyticsService = new AnalyticsService(
 );
 const financialHealthService = new FinancialHealthService(analyticsService);
 const reportService = new ReportService(analyticsService, createPrismaReportRepository(prisma));
+const notificationRepository = createPrismaNotificationRepository(prisma);
+const notificationService = new NotificationService(notificationRepository, analyticsService);
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -101,6 +105,10 @@ const app = createApp({
   },
   reports: {
     service: reportService,
+    accessTokenService,
+  },
+  notifications: {
+    service: notificationService,
     accessTokenService,
   },
 });

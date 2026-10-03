@@ -207,3 +207,60 @@ The `monthly` and `yearly` endpoints accept `year` (integer 2000–2100) and `mo
 Insights are generated without AI or LLM — they are deterministic rule evaluations over recorded data. Each insight has a `type` (`positive`, `warning`, `neutral`, or `info`), a `category`, a `title`, a `message`, and a `priority` (lower = more important). Insights are sorted by priority.
 
 Examples of generated insights: expenses exceeding income, spending increased more than 20% vs the prior period, low savings rate, budgets over or near the limit, savings goals progressing slowly, positive cash flow, improving or declining trend. A new user with no transactions receives neutral informational insights rather than errors.
+
+## Notifications
+
+All notification routes require the authenticated `fhb_access` cookie. All queries are scoped to the authenticated user only. `userId` is never accepted from query parameters or request bodies, and is never included in any response.
+
+### GET /api/v1/notifications
+List notifications for the authenticated user.
+Query params: `page` (default 1), `pageSize` (default 20, max 100), `read` (`true`/`false`, optional).
+Returns: `{ data: NotificationResponse[], total, page, pageSize }`.
+
+### GET /api/v1/notifications/preferences
+Get notification preferences for the authenticated user. Returns default preferences (all categories enabled) if none have been configured.
+
+### PATCH /api/v1/notifications/preferences
+Update notification preferences.
+Body: `{ budgetAlerts?, goalAlerts?, recurringReminders?, financialHealthAlerts?, billReminders?, generalAlerts? }` — all boolean, all optional. Unknown fields are rejected with `400 VALIDATION_ERROR`.
+
+### GET /api/v1/notifications/:notificationId
+Get a single notification. Returns `404 NOT_FOUND` (generic) for not-found or foreign IDs.
+
+### PATCH /api/v1/notifications/read-all
+Mark all unread notifications as read.
+Returns: `{ count: N }` — number of notifications updated.
+
+### PATCH /api/v1/notifications/:notificationId/read
+Mark a single notification as read. Returns `404 NOT_FOUND` for not-found or foreign IDs.
+
+### DELETE /api/v1/notifications/:notificationId
+Delete a notification. Returns `204`. Returns `404 NOT_FOUND` for not-found or foreign IDs.
+
+### POST /api/v1/notifications/generate
+Trigger rule-based notification generation for the authenticated user.
+Generates notifications for: budget exceeded, budget approaching threshold (≥80%), overdue goals, and negative monthly cash flow.
+Deduplication: will not generate the same notification type more than once per 24 hours.
+Returns: `{ generated: N }` — count of newly created notifications.
+
+Notification types: `BUDGET_THRESHOLD`, `BUDGET_EXCEEDED`, `RECURRING_TRANSACTION`, `GOAL_PROGRESS`, `BILL_REMINDER`, `FINANCIAL_HEALTH`, `GENERAL`.
+
+## CSV Export
+
+### GET /api/v1/reports/export/csv
+Export transactions as a CSV file. Requires authentication.
+Query params: `type` (required, must be `transactions`), `startDate` (YYYY-MM-DD, optional), `endDate` (YYYY-MM-DD, optional).
+Response: `Content-Type: text/csv; charset=utf-8` with `Content-Disposition: attachment; filename="transactions.csv"`.
+CSV header: `id,type,amount,currency,description,effectiveAt,categoryId,accountId,createdAt`.
+Notes:
+- Excludes `TRANSFER` type transactions
+- Monetary amounts are plain decimal strings (no currency symbols)
+- Dates are ISO 8601 strings
+- Null/empty fields output as empty string
+- RFC 4180 compliant: CRLF line endings, values containing commas or quotes are double-quoted
+
+## Audit Logging
+
+Mutating API operations (`POST`, `PATCH`, `PUT`, `DELETE`) are automatically logged as structured JSON to the application console.
+Log fields: `event` (`api.audit`), `name` (operation path), `method`, `path`, `userId` (first 8 characters only — never the full ID), `requestId`, `statusCode`, `timestamp`.
+Never logs request or response bodies, passwords, tokens, financial data, or any sensitive secrets.

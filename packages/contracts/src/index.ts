@@ -8,6 +8,7 @@ export * from "./common/errors";
 export * from "./common/pagination";
 export * from "./financial-health/financial-health";
 export * from "./goals/goals";
+export * from "./notifications/notifications";
 export * from "./recurring-transactions/recurring-transactions";
 export * from "./reports/reports";
 export * from "./transactions/transactions";

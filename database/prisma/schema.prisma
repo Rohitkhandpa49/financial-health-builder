@@ -51,19 +51,31 @@ enum SavingsGoalStatus {
   ARCHIVED
 }
 
+enum NotificationType {
+  BUDGET_THRESHOLD
+  BUDGET_EXCEEDED
+  RECURRING_TRANSACTION
+  GOAL_PROGRESS
+  BILL_REMINDER
+  FINANCIAL_HEALTH
+  GENERAL
+}
+
 model User {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  name                  String                 @db.VarChar(120)
-  email                 String                 @unique @db.VarChar(254)
-  passwordHash          String                 @db.VarChar(255)
-  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
-  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
-  accounts              Account[]
-  categories            Category[]
-  transactions          Transaction[]
-  budgets               Budget[]
-  savingsGoals          SavingsGoal[]
-  recurringTransactions RecurringTransaction[]
+  id                      String                   @id @default(uuid()) @db.Uuid
+  name                    String                   @db.VarChar(120)
+  email                   String                   @unique @db.VarChar(254)
+  passwordHash            String                   @db.VarChar(255)
+  createdAt               DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime                 @updatedAt @db.Timestamptz(3)
+  accounts                Account[]
+  categories              Category[]
+  transactions            Transaction[]
+  budgets                 Budget[]
+  savingsGoals            SavingsGoal[]
+  recurringTransactions   RecurringTransaction[]
+  notifications           Notification[]
+  notificationPreference  NotificationPreference?
 }
 
 model Account {
@@ -181,4 +193,34 @@ model RecurringTransaction {
 
   @@index([userId, active])
   @@index([userId, nextDate])
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(200)
+  message   String           @db.VarChar(1000)
+  read      Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @db.Timestamptz(3)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreference {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @db.Uuid
+  budgetAlerts          Boolean  @default(true)
+  goalAlerts            Boolean  @default(true)
+  recurringReminders    Boolean  @default(true)
+  financialHealthAlerts Boolean  @default(true)
+  billReminders         Boolean  @default(true)
+  generalAlerts         Boolean  @default(true)
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }

@@ -116,3 +116,35 @@ export function getValidatedMonthlyQuery(request: Request): MonthlyReportQuery {
 export function getValidatedYearlyQuery(request: Request): YearlyReportQuery {
   return request.validatedYearlyQuery ?? {};
 }
+
+export const csvExportQuerySchema = z
+  .strictObject({
+    type: z.enum(['transactions']),
+    startDate: dateSchema.optional(),
+    endDate: dateSchema.optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) {
+        return new Date(data.startDate) <= new Date(data.endDate);
+      }
+      return true;
+    },
+    { message: 'startDate must be before or equal to endDate' },
+  );
+
+export type CsvExportQuery = z.infer<typeof csvExportQuerySchema>;
+
+declare global {
+  namespace Express {
+    interface Request {
+      validatedCsvExportQuery?: CsvExportQuery;
+    }
+  }
+}
+
+export const validateCsvExportQuery = validate<CsvExportQuery>(
+  csvExportQuerySchema,
+  (req) => req.query,
+  (req, v) => { req.validatedCsvExportQuery = v; },
+);
