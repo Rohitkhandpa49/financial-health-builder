@@ -16,6 +16,8 @@ import { TransferService } from "./transfers/transfer.service.js";
 import { createPrismaAnalyticsRepository } from "./analytics/analytics.repository.js";
 import { AnalyticsService } from "./analytics/analytics.service.js";
 import { FinancialHealthService } from "./financial-health/financial-health.service.js";
+import { createPrismaReportRepository } from "./reports/report.repository.js";
+import { ReportService } from "./reports/report.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -51,6 +53,7 @@ const analyticsService = new AnalyticsService(
   createPrismaCategoryRepository(prisma),
 );
 const financialHealthService = new FinancialHealthService(analyticsService);
+const reportService = new ReportService(analyticsService, createPrismaReportRepository(prisma));
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -94,6 +97,10 @@ const app = createApp({
   },
   financialHealth: {
     service: financialHealthService,
+    accessTokenService,
+  },
+  reports: {
+    service: reportService,
     accessTokenService,
   },
 });

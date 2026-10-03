@@ -182,3 +182,28 @@ Response shape:
 - `disclaimer` — statement that this is not professional financial advice
 
 A new user with no data receives a score of 50 (neutral) with `hasSufficientData: false`.
+
+## Reports
+
+All report routes require the authenticated `fhb_access` cookie. All queries are scoped to the authenticated user's data only. `userId` is never accepted from query parameters or request bodies. Transfer transactions are excluded from income and expense calculations in all reports.
+
+### Date filter behavior
+
+Most report endpoints accept optional `startDate` and `endDate` query parameters (YYYY-MM-DD). If omitted, the current calendar month is used as the default range. `endDate` must be on or after `startDate`. Unknown query parameters are rejected with `400 VALIDATION_ERROR`.
+
+The `monthly` and `yearly` endpoints accept `year` (integer 2000–2100) and `month` (1–12) instead of a date range. Both default to the current period.
+
+### Endpoints
+
+- `GET /api/v1/reports/monthly` — full monthly report for a given year/month including income, expenses, net cash flow, savings rate, transaction counts, top spending categories, and active budgets. Query params: `year`, `month`.
+- `GET /api/v1/reports/yearly` — full yearly report including totals, month-by-month cash-flow breakdown, top spending categories, and savings goal progress. Query param: `year`.
+- `GET /api/v1/reports/category-spending` — expense breakdown by category with amounts and percentages for the date range. Accepts `startDate`/`endDate`.
+- `GET /api/v1/reports/account-summary` — per-account activity summary including opening balance, income, expenses, and net activity for the date range. Accepts `startDate`/`endDate`.
+- `GET /api/v1/reports/cash-flow` — monthly income/expense/net periods with an overall trend indicator (`improving`, `declining`, `stable`, or `insufficient_data`). Accepts `startDate`/`endDate`.
+- `GET /api/v1/reports/insights` — deterministic rule-based financial insights generated from the current period's data compared with the previous equivalent period. Accepts `startDate`/`endDate`.
+
+### Financial Insights behavior
+
+Insights are generated without AI or LLM — they are deterministic rule evaluations over recorded data. Each insight has a `type` (`positive`, `warning`, `neutral`, or `info`), a `category`, a `title`, a `message`, and a `priority` (lower = more important). Insights are sorted by priority.
+
+Examples of generated insights: expenses exceeding income, spending increased more than 20% vs the prior period, low savings rate, budgets over or near the limit, savings goals progressing slowly, positive cash flow, improving or declining trend. A new user with no transactions receives neutral informational insights rather than errors.

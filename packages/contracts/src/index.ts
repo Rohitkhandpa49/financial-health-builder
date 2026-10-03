@@ -9,5 +9,6 @@ export * from "./common/pagination";
 export * from "./financial-health/financial-health";
 export * from "./goals/goals";
 export * from "./recurring-transactions/recurring-transactions";
+export * from "./reports/reports";
 export * from "./transactions/transactions";
 export * from "./transfers/transfers";
