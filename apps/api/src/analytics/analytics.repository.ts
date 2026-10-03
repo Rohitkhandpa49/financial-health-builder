@@ -140,7 +140,7 @@ export function createPrismaAnalyticsRepository(prisma: PrismaClient): Analytics
         orderBy: { _sum: { amount: "desc" } },
       });
 
-      return groups.map((g) => ({
+      return groups.map((g: { categoryId: string | null; _sum: { amount: unknown }; _count: { id: number } }) => ({
         categoryId: g.categoryId,
         amount: decimalToString(g._sum.amount),
         transactionCount: g._count.id,
@@ -160,7 +160,7 @@ export function createPrismaAnalyticsRepository(prisma: PrismaClient): Analytics
         orderBy: { _sum: { amount: "desc" } },
       });
 
-      return groups.map((g) => ({
+      return groups.map((g: { categoryId: string | null; _sum: { amount: unknown }; _count: { id: number } }) => ({
         categoryId: g.categoryId,
         amount: decimalToString(g._sum.amount),
         transactionCount: g._count.id,
@@ -267,7 +267,7 @@ export function createPrismaAnalyticsRepository(prisma: PrismaClient): Analytics
         },
       });
 
-      return goals.map((g) => ({
+      return goals.map((g: { id: string; name: string; targetAmount: unknown; currentAmount: unknown; status: string; currency: string }) => ({
         goalId: g.id,
         name: g.name,
         targetAmount: decimalToString(g.targetAmount),
