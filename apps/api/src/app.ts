@@ -9,6 +9,8 @@ import { createBudgetRouter, type BudgetRouterOptions } from "./budgets/budget.r
 import { createGoalRouter, type GoalRouterOptions } from "./goals/goal.routes.js";
 import { createRecurringTransactionRouter, type RecurringTransactionRouterOptions } from "./recurring-transactions/recurring-transaction.routes.js";
 import { createTransferRouter, type TransferRouterOptions } from "./transfers/transfer.routes.js";
+import { createAnalyticsRouter, type AnalyticsRouterOptions } from "./analytics/analytics.routes.js";
+import { createFinancialHealthRouter, type FinancialHealthRouterOptions } from "./financial-health/financial-health.routes.js";
 import { errorHandler, notFoundHandler } from "./http/errors.js";
 import { requestIdMiddleware } from "./http/request-id.js";
 import { v1Router } from "./routes/v1.js";
@@ -23,6 +25,8 @@ export interface AppOptions {
   goals?: GoalRouterOptions;
   recurringTransactions?: RecurringTransactionRouterOptions;
   transfers?: TransferRouterOptions;
+  analytics?: AnalyticsRouterOptions;
+  financialHealth?: FinancialHealthRouterOptions;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -64,6 +68,12 @@ export function createApp(options: AppOptions = {}) {
   }
   if (options.transfers) {
     app.use("/api/v1/transfers", createTransferRouter(options.transfers));
+  }
+  if (options.analytics) {
+    app.use("/api/v1/analytics", createAnalyticsRouter(options.analytics));
+  }
+  if (options.financialHealth) {
+    app.use("/api/v1/financial-health", createFinancialHealthRouter(options.financialHealth));
   }
   app.use(notFoundHandler);
   app.use(errorHandler);

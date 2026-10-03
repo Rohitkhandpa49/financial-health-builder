@@ -152,3 +152,33 @@ All transfer routes require the authenticated `fhb_access` cookie. A transfer is
 - `DELETE /api/v1/transfers/:transferGroupId` deletes both sides atomically and returns `204`.
 
 Transfer invariants enforced by the service: both accounts must belong to the authenticated user (`400 TRANSFER_INVALID_SOURCE` / `TRANSFER_INVALID_DESTINATION`); source and destination must be different accounts (`400 TRANSFER_SAME_ACCOUNT`); both accounts must share the same currency (`400 TRANSFER_CURRENCY_MISMATCH`). The `userId`, `transferGroupId`, and `transferDirection` fields are never exposed in responses.
+
+## Analytics
+
+All analytics routes require the authenticated `fhb_access` cookie. All queries are scoped exclusively to the authenticated user's data. `userId` is never accepted from query parameters or request bodies. Transfer transactions (`type = TRANSFER`) are excluded from income and expense calculations.
+
+Optional date filters `startDate` and `endDate` (YYYY-MM-DD) are accepted on summary, cash-flow, spending, and income endpoints. If omitted, the current calendar month is used. `endDate` must be on or after `startDate`.
+
+- `GET /api/v1/analytics/summary` — total income, expenses, net cash flow, transaction count, savings amount and rate for the period.
+- `GET /api/v1/analytics/cash-flow` — income, expenses, and net grouped by calendar month.
+- `GET /api/v1/analytics/spending` — expense breakdown by category with amounts and percentages.
+- `GET /api/v1/analytics/income` — income breakdown by category with amounts and percentages.
+- `GET /api/v1/analytics/budgets` — each budget with spent amount, remaining, utilization percentage, and over-budget flag.
+- `GET /api/v1/analytics/goals` — each savings goal with current/target amounts, remaining, progress percentage, and status counts.
+
+All monetary values are returned as fixed 4-decimal strings. Percentages are returned as 2-decimal strings.
+
+## Financial Health
+
+`GET /api/v1/financial-health` — returns a deterministic, application-defined financial wellness score (0–100) based on the authenticated user's data. Accepts optional `startDate`/`endDate` query parameters.
+
+**This is not a professional financial, credit, or regulatory assessment.** It is an informational indicator calculated from your recorded data.
+
+Response shape:
+- `overallScore` — weighted composite 0–100 integer
+- `components` — five scored dimensions: `savingsRate` (25%), `budgetAdherence` (20%), `goalProgress` (20%), `cashFlowHealth` (20%), `spendingStability` (15%)
+- `metrics` — underlying numeric values used in the calculation
+- `insights` — rule-based observations (positive / warning / neutral)
+- `disclaimer` — statement that this is not professional financial advice
+
+A new user with no data receives a score of 50 (neutral) with `hasSufficientData: false`.

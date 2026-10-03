@@ -13,6 +13,9 @@ import { createPrismaRecurringTransactionRepository } from "./recurring-transact
 import { RecurringTransactionService } from "./recurring-transactions/recurring-transaction.service.js";
 import { createPrismaTransferRepository } from "./transfers/transfer.repository.js";
 import { TransferService } from "./transfers/transfer.service.js";
+import { createPrismaAnalyticsRepository } from "./analytics/analytics.repository.js";
+import { AnalyticsService } from "./analytics/analytics.service.js";
+import { FinancialHealthService } from "./financial-health/financial-health.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -43,6 +46,11 @@ const transferService = new TransferService(
   createPrismaTransferRepository(prisma),
   createPrismaAccountRepository(prisma),
 );
+const analyticsService = new AnalyticsService(
+  createPrismaAnalyticsRepository(prisma),
+  createPrismaCategoryRepository(prisma),
+);
+const financialHealthService = new FinancialHealthService(analyticsService);
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -78,6 +86,14 @@ const app = createApp({
   },
   transfers: {
     service: transferService,
+    accessTokenService,
+  },
+  analytics: {
+    service: analyticsService,
+    accessTokenService,
+  },
+  financialHealth: {
+    service: financialHealthService,
     accessTokenService,
   },
 });
