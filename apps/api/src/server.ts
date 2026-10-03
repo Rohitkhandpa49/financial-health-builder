@@ -9,6 +9,10 @@ import { createPrismaBudgetRepository } from "./budgets/budget.repository.js";
 import { BudgetService } from "./budgets/budget.service.js";
 import { createPrismaGoalRepository } from "./goals/goal.repository.js";
 import { GoalService } from "./goals/goal.service.js";
+import { createPrismaRecurringTransactionRepository } from "./recurring-transactions/recurring-transaction.repository.js";
+import { RecurringTransactionService } from "./recurring-transactions/recurring-transaction.service.js";
+import { createPrismaTransferRepository } from "./transfers/transfer.repository.js";
+import { TransferService } from "./transfers/transfer.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -30,6 +34,15 @@ const transactionService = new TransactionService(transactionRepository, createP
 const budgetRepository = createPrismaBudgetRepository(prisma);
 const budgetService = new BudgetService(budgetRepository, createPrismaCategoryRepository(prisma));
 const goalService = new GoalService(createPrismaGoalRepository(prisma));
+const recurringTransactionService = new RecurringTransactionService(
+  createPrismaRecurringTransactionRepository(prisma),
+  createPrismaAccountRepository(prisma),
+  createPrismaCategoryRepository(prisma),
+);
+const transferService = new TransferService(
+  createPrismaTransferRepository(prisma),
+  createPrismaAccountRepository(prisma),
+);
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -57,6 +70,14 @@ const app = createApp({
   },
   goals: {
     service: goalService,
+    accessTokenService,
+  },
+  recurringTransactions: {
+    service: recurringTransactionService,
+    accessTokenService,
+  },
+  transfers: {
+    service: transferService,
     accessTokenService,
   },
 });

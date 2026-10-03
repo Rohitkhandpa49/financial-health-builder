@@ -129,3 +129,26 @@ Goals represent financial savings targets. Each goal has a `targetAmount`, a `cu
 ## Authorization and ownership
 
 Authentication establishes the immutable `request.auth.userId`; authorization checks whether that identity may access a resource. `assertResourceOwnedByAuthenticatedUser` is the shared ownership policy for user-owned records and returns the existing generic `404 NOT_FOUND` behavior for a foreign owner. Use the verified auth context, never a body, path, query, or header user ID. Ownership checks do not replace scoped persistence queries: repositories include both resource ID and authenticated `userId` in account `where` clauses and must check each related resource independently before writes. Accounts are the only financial-resource routes implemented so far. System-defined category access/mutation policy remains deliberately undecided until category operations are designed.
+
+## Recurring Transactions
+
+All recurring transaction routes require the authenticated `fhb_access` cookie. Ownership comes only from the verified `request.auth.userId`; request bodies and query parameters cannot select an owner. Currency is derived from the referenced account and never accepted from the client.
+
+- `POST /api/v1/recurring-transactions` accepts `accountId`, `type` (`INCOME` or `EXPENSE`), `amount`, `description`, `frequency` (`DAILY`, `WEEKLY`, `MONTHLY`, `YEARLY`), `startDate` (YYYY-MM-DD), `nextDate` (YYYY-MM-DD), and optional `categoryId` and `endDate`; returns `201` with `{ recurringTransaction }`.
+- `GET /api/v1/recurring-transactions` returns the authenticated user's recurring transactions ordered by `nextDate` ascending. Supports `page`, `pageSize` (max 100), and optional `active` (`true`/`false`) and `accountId` filters.
+- `GET /api/v1/recurring-transactions/:recurringTransactionId` returns a single owned recurring transaction.
+- `PATCH /api/v1/recurring-transactions/:recurringTransactionId` permits updating `categoryId`, `amount`, `description`, `endDate`, `nextDate`, and `active`.
+- `DELETE /api/v1/recurring-transactions/:recurringTransactionId` permanently deletes the recurring transaction and returns `204`.
+
+`TRANSFER` type is rejected at the validation layer. All repository queries include `NOT: { type: "TRANSFER" }`. Account ownership and category ownership (own + system) are enforced at creation and update. Foreign or missing records return the generic `404 NOT_FOUND`.
+
+## Transfers
+
+All transfer routes require the authenticated `fhb_access` cookie. A transfer is a paired double-entry operation creating two `Transaction` records sharing a `transferGroupId` — one `OUTGOING` on the source account and one `INCOMING` on the destination account. Both sides are created atomically inside a single Prisma transaction; if either side fails, neither persists.
+
+- `POST /api/v1/transfers` accepts `sourceAccountId`, `destinationAccountId`, `amount`, `description`, and `effectiveAt` (ISO 8601 with timezone offset); returns `201` with `{ transfer }` containing `transferGroupId`, `outgoing`, `incoming`, and `amount`.
+- `GET /api/v1/transfers` returns all paired transfers belonging to the authenticated user, grouped by `transferGroupId`, with `page` and `pageSize` pagination.
+- `GET /api/v1/transfers/:transferGroupId` returns a single transfer pair.
+- `DELETE /api/v1/transfers/:transferGroupId` deletes both sides atomically and returns `204`.
+
+Transfer invariants enforced by the service: both accounts must belong to the authenticated user (`400 TRANSFER_INVALID_SOURCE` / `TRANSFER_INVALID_DESTINATION`); source and destination must be different accounts (`400 TRANSFER_SAME_ACCOUNT`); both accounts must share the same currency (`400 TRANSFER_CURRENCY_MISMATCH`). The `userId`, `transferGroupId`, and `transferDirection` fields are never exposed in responses.

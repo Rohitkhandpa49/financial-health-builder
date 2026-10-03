@@ -37,6 +37,13 @@ enum BudgetPeriod {
   CUSTOM
 }
 
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
 enum SavingsGoalStatus {
   ACTIVE
   COMPLETED
@@ -45,48 +52,51 @@ enum SavingsGoalStatus {
 }
 
 model User {
-  id            String        @id @default(uuid()) @db.Uuid
-  name          String        @db.VarChar(120)
-  email         String        @unique @db.VarChar(254)
-  passwordHash  String        @db.VarChar(255)
-  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
-  accounts      Account[]
-  categories    Category[]
-  transactions  Transaction[]
-  budgets       Budget[]
-  savingsGoals  SavingsGoal[]
+  id                    String                 @id @default(uuid()) @db.Uuid
+  name                  String                 @db.VarChar(120)
+  email                 String                 @unique @db.VarChar(254)
+  passwordHash          String                 @db.VarChar(255)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  accounts              Account[]
+  categories            Category[]
+  transactions          Transaction[]
+  budgets               Budget[]
+  savingsGoals          SavingsGoal[]
+  recurringTransactions RecurringTransaction[]
 }
 
 model Account {
-  id             String        @id @default(uuid()) @db.Uuid
-  userId         String        @db.Uuid
-  name           String        @db.VarChar(120)
-  type           AccountType
-  currency       String        @db.Char(3)
-  openingBalance Decimal       @db.Decimal(19, 4)
-  archived       Boolean       @default(false)
-  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  transactions   Transaction[]
+  id                    String                 @id @default(uuid()) @db.Uuid
+  userId                String                 @db.Uuid
+  name                  String                 @db.VarChar(120)
+  type                  AccountType
+  currency              String                 @db.Char(3)
+  openingBalance        Decimal                @db.Decimal(19, 4)
+  archived              Boolean                @default(false)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
 
   @@unique([id, userId, currency])
   @@index([userId, archived])
 }
 
 model Category {
-  id            String        @id @default(uuid()) @db.Uuid
-  userId        String?       @db.Uuid
-  name          String        @db.VarChar(100)
-  type          CategoryType
-  systemDefined Boolean
-  archived      Boolean       @default(false)
-  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
-  user          User?         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  transactions  Transaction[]
-  budgets       Budget[]
+  id                    String                 @id @default(uuid()) @db.Uuid
+  userId                String?                @db.Uuid
+  name                  String                 @db.VarChar(100)
+  type                  CategoryType
+  systemDefined         Boolean
+  archived              Boolean                @default(false)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  user                  User?                  @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transactions          Transaction[]
+  budgets               Budget[]
+  recurringTransactions RecurringTransaction[]
 
   @@index([userId, type, archived])
 }
@@ -147,4 +157,28 @@ model SavingsGoal {
   user          User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([userId, status])
+}
+
+model RecurringTransaction {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @db.Uuid
+  accountId   String              @db.Uuid
+  categoryId  String?             @db.Uuid
+  type        TransactionType
+  amount      Decimal             @db.Decimal(19, 4)
+  currency    String              @db.Char(3)
+  description String              @db.VarChar(500)
+  frequency   RecurrenceFrequency
+  startDate   DateTime            @db.Date
+  endDate     DateTime?           @db.Date
+  nextDate    DateTime            @db.Date
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime            @updatedAt @db.Timestamptz(3)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  account     Account             @relation(fields: [accountId, userId, currency], references: [id, userId, currency], onDelete: Restrict, onUpdate: Cascade)
+  category    Category?           @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([userId, active])
+  @@index([userId, nextDate])
 }

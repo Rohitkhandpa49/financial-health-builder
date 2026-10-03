@@ -7,6 +7,8 @@ import { createCategoryRouter, type CategoryRouterOptions } from "./categories/c
 import { createTransactionRouter, type TransactionRouterOptions } from "./transactions/transaction.routes.js";
 import { createBudgetRouter, type BudgetRouterOptions } from "./budgets/budget.routes.js";
 import { createGoalRouter, type GoalRouterOptions } from "./goals/goal.routes.js";
+import { createRecurringTransactionRouter, type RecurringTransactionRouterOptions } from "./recurring-transactions/recurring-transaction.routes.js";
+import { createTransferRouter, type TransferRouterOptions } from "./transfers/transfer.routes.js";
 import { errorHandler, notFoundHandler } from "./http/errors.js";
 import { requestIdMiddleware } from "./http/request-id.js";
 import { v1Router } from "./routes/v1.js";
@@ -19,6 +21,8 @@ export interface AppOptions {
   transactions?: TransactionRouterOptions;
   budgets?: BudgetRouterOptions;
   goals?: GoalRouterOptions;
+  recurringTransactions?: RecurringTransactionRouterOptions;
+  transfers?: TransferRouterOptions;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -54,6 +58,12 @@ export function createApp(options: AppOptions = {}) {
   }
   if (options.goals) {
     app.use("/api/v1/goals", createGoalRouter(options.goals));
+  }
+  if (options.recurringTransactions) {
+    app.use("/api/v1/recurring-transactions", createRecurringTransactionRouter(options.recurringTransactions));
+  }
+  if (options.transfers) {
+    app.use("/api/v1/transfers", createTransferRouter(options.transfers));
   }
   app.use(notFoundHandler);
   app.use(errorHandler);

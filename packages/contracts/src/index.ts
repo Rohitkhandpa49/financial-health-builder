@@ -5,4 +5,6 @@ export * from "./common/api";
 export * from "./common/errors";
 export * from "./common/pagination";
 export * from "./goals/goals";
+export * from "./recurring-transactions/recurring-transactions";
 export * from "./transactions/transactions";
+export * from "./transfers/transfers";
