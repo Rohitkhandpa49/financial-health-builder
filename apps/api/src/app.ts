@@ -6,6 +6,7 @@ import { createAuthRouter, type AuthRouterOptions } from "./auth/auth.routes.js"
 import { createCategoryRouter, type CategoryRouterOptions } from "./categories/category.routes.js";
 import { createTransactionRouter, type TransactionRouterOptions } from "./transactions/transaction.routes.js";
 import { createBudgetRouter, type BudgetRouterOptions } from "./budgets/budget.routes.js";
+import { createGoalRouter, type GoalRouterOptions } from "./goals/goal.routes.js";
 import { errorHandler, notFoundHandler } from "./http/errors.js";
 import { requestIdMiddleware } from "./http/request-id.js";
 import { v1Router } from "./routes/v1.js";
@@ -17,6 +18,7 @@ export interface AppOptions {
   categories?: CategoryRouterOptions;
   transactions?: TransactionRouterOptions;
   budgets?: BudgetRouterOptions;
+  goals?: GoalRouterOptions;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -49,6 +51,9 @@ export function createApp(options: AppOptions = {}) {
   }
   if (options.budgets) {
     app.use("/api/v1/budgets", createBudgetRouter(options.budgets));
+  }
+  if (options.goals) {
+    app.use("/api/v1/goals", createGoalRouter(options.goals));
   }
   app.use(notFoundHandler);
   app.use(errorHandler);

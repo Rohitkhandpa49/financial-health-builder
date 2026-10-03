@@ -106,6 +106,26 @@ Budgets represent planned spending limits over a date range. Each budget has a `
 
 **Category rules:** If `categoryId` is provided, it must resolve to a user-owned category or a system-defined category. An unrecognized or foreign category returns `400 BUDGET_INVALID_CATEGORY`. Physical deletion is safe — no other model has a foreign key pointing at `Budget`.
 
+## Goals
+
+All goal routes require the authenticated `fhb_access` cookie. Ownership comes only from the verified `request.auth.userId`; request bodies and query parameters cannot select an owner.
+
+Goals represent financial savings targets. Each goal has a `targetAmount`, a `currentAmount` tracking progress, a `currency`, a `targetDate` deadline, and a `status` from the enum `ACTIVE | COMPLETED | OVERDUE | ARCHIVED`.
+
+- `POST /api/v1/goals` accepts `name`, `targetAmount`, `currency`, `targetDate`, and optionally `currentAmount` and `status`; returns `201` with `{ goal }`. Ownership is derived from authentication.
+- `GET /api/v1/goals` returns the authenticated user's goals, ordered by `targetDate` ascending, then `createdAt` descending, then `id` descending. Accepts `page` (default `1`), `pageSize` (default `25`, maximum `100`), and `status` (filter by goal status enum value). The response includes `goals` and `pagination` metadata. Unknown query parameters (including `userId`) are rejected with `400 VALIDATION_ERROR`.
+- `GET /api/v1/goals/:goalId` returns an owned goal. Foreign and nonexistent IDs return `404 NOT_FOUND`.
+- `PATCH /api/v1/goals/:goalId` permits updating `name`, `targetAmount`, `currentAmount`, `targetDate`, and `status`. All fields are optional. Unknown fields are rejected. Foreign and nonexistent IDs return `404 NOT_FOUND`.
+- `DELETE /api/v1/goals/:goalId` permanently deletes the goal and returns `204`. Foreign and nonexistent IDs return `404 NOT_FOUND`.
+
+**Ownership model:** All queries scope by the authenticated `userId`. A foreign or nonexistent goal always returns `404 NOT_FOUND`, never a `403`. The `userId` field is never included in any response.
+
+**Amount rules:** `targetAmount` and `currentAmount` must be non-negative decimal strings with at most 15 integer digits and up to 4 fractional digits. Zero (`"0"`) is accepted. Amounts are stored as `DECIMAL(19,4)` and returned as a fixed-scale 4-decimal string (e.g., `"1000.0000"`). `currentAmount` defaults to `"0"` when not provided at creation.
+
+**Date rules:** `targetDate` must be in `YYYY-MM-DD` format and represent a valid calendar date. It is stored as a calendar date without time components and returned in `YYYY-MM-DD` format.
+
+**Status rules:** `status` must be one of `ACTIVE`, `COMPLETED`, `OVERDUE`, or `ARCHIVED`. It defaults to `ACTIVE` when not provided at creation. Physical deletion is safe — no other model has a foreign key pointing at `SavingsGoal`.
+
 ## Authorization and ownership
 
 Authentication establishes the immutable `request.auth.userId`; authorization checks whether that identity may access a resource. `assertResourceOwnedByAuthenticatedUser` is the shared ownership policy for user-owned records and returns the existing generic `404 NOT_FOUND` behavior for a foreign owner. Use the verified auth context, never a body, path, query, or header user ID. Ownership checks do not replace scoped persistence queries: repositories include both resource ID and authenticated `userId` in account `where` clauses and must check each related resource independently before writes. Accounts are the only financial-resource routes implemented so far. System-defined category access/mutation policy remains deliberately undecided until category operations are designed.

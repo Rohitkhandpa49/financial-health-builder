@@ -7,6 +7,8 @@ import { createPrismaTransactionRepository } from "./transactions/transaction.re
 import { TransactionService } from "./transactions/transaction.service.js";
 import { createPrismaBudgetRepository } from "./budgets/budget.repository.js";
 import { BudgetService } from "./budgets/budget.service.js";
+import { createPrismaGoalRepository } from "./goals/goal.repository.js";
+import { GoalService } from "./goals/goal.service.js";
 import { Argon2PasswordHasher } from "./auth/password-hasher.js";
 import { createPrismaAuthRepository } from "./auth/auth.repository.js";
 import { AuthenticationService } from "./auth/auth.service.js";
@@ -27,6 +29,7 @@ const transactionRepository = createPrismaTransactionRepository(prisma);
 const transactionService = new TransactionService(transactionRepository, createPrismaAccountRepository(prisma), createPrismaCategoryRepository(prisma));
 const budgetRepository = createPrismaBudgetRepository(prisma);
 const budgetService = new BudgetService(budgetRepository, createPrismaCategoryRepository(prisma));
+const goalService = new GoalService(createPrismaGoalRepository(prisma));
 
 const app = createApp({
   frontendUrl: config.frontendUrl,
@@ -50,6 +53,10 @@ const app = createApp({
   },
   budgets: {
     service: budgetService,
+    accessTokenService,
+  },
+  goals: {
+    service: goalService,
     accessTokenService,
   },
 });
